@@ -1,0 +1,5 @@
+pytorch==1.2
+torchvision==0.4
+seaborn==0.9
+pywavelets==1.0
+jupyter==1.0

@@ -5,6 +5,8 @@ Implementação em Pytorch do artigo [A Structurally Regularized Convolutional N
 Acredito que o artigo esteja disponível livremente [aqui](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8804202)
 
 Links úteis:
-https://pytorch-wavelets.readthedocs.io/en/latest/ -- não foi usado (por enquanto) pois não inclue wavelet packet transform
-https://lernapparat.de/2d-wavelet-transform-pytorch/
-https://pywavelets.readthedocs.io/en/latest/
+ - https://pytorch-wavelets.readthedocs.io/en/latest/ -- não foi usado pois não inclui wavelet packet transform
+ - https://lernapparat.de/2d-wavelet-transform-pytorch/
+ - https://pywavelets.readthedocs.io/en/latest/
+ - http://ataspinar.com/2018/12/21/a-guide-for-using-the-wavelet-transform-in-machine-learning/
+ 

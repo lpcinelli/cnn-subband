@@ -162,9 +162,6 @@ def fit(train_loader,
     # loop over the dataset multiple times
     for epoch in range(start_epoch, epochs):
 
-        # Adjust learning rate according to schedule
-        scheduler.step()
-
         # train for one epoch
         print("\nBegin Training Epoch {}".format(epoch + 1))
         stats = train(train_loader, model, criterion, optimizer, epoch, device)
@@ -178,6 +175,9 @@ def fit(train_loader,
             history['val'][name].append(val)
 
         prec1 = stats['acc1']
+
+        # Adjust learning rate according to schedule
+        scheduler.step()
 
         if savepath is not None:
             torch.save(

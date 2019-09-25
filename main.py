@@ -52,6 +52,7 @@ def execute(args):
         filepath = os.path.join(model_dir, 'checkpoint.pth')
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
+        torch.save(vars(args), os.path.join(model_dir, 'config.pth'))
 
     if args.resume:
         # only resumes from the last not from the best

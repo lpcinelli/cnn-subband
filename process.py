@@ -1,5 +1,4 @@
 import os
-import pdb
 import time
 
 import numpy as np
@@ -133,6 +132,7 @@ def fit(train_loader,
         epochs,
         device,
         optimizer,
+        scheduler,
         savepath=None,
         start_epoch=0,
         history=None):
@@ -157,11 +157,13 @@ def fit(train_loader,
             }
         }
 
+    end = time.time()
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     # loop over the dataset multiple times
     for epoch in range(start_epoch, epochs):
 
         # Adjust learning rate according to schedule
-        # adjust_learning_rate(starting_lr, optimizer, epoch)
+        scheduler.step()
 
         # train for one epoch
         print("\nBegin Training Epoch {}".format(epoch + 1))
@@ -202,6 +204,7 @@ def fit(train_loader,
         print("Epoch Summary: ")
         print("\tEpoch Accuracy: {}".format(prec1))
         print("\tBest Accuracy: {}".format(best_prec1))
+    print("Total training time: {:.1f}".format(time.time() - end))
 
 
 def evaluate(test_loader, model, device, savepath, idx_2_class):

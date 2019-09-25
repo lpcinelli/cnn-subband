@@ -1,10 +1,11 @@
 import argparse
 import os
 
-import torch
 import datasets
+import torch
+# from models import SRCNN
+from archs import SRCNN
 from losses import cross_entropy
-from models import SRCNN
 from process import evaluate, fit, validate
 from torch import optim
 
@@ -35,7 +36,8 @@ def execute(args):
     dataset = datasets.dataset[args.dataset](args.data_dir, args.batch_size, args.val_split,
                                              args.seed, extra_transforms=args.transforms)
 
-    model = SRCNN(args.wavelet, args.level, 'grayscale' in args.transforms)
+    nb_classes = len(dataset.train_loader.dataset.classes)
+    model = SRCNN(nb_classes, args.wavelet, args.level, 'grayscale' in args.transforms)
     model = model.to(device)
     criterion = cross_entropy.to(device)
 

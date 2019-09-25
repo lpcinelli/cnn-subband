@@ -207,7 +207,7 @@ def fit(train_loader,
     print("Total training time: {:.1f}".format(time.time() - end))
 
 
-def evaluate(test_loader, model, device, savepath, idx_2_class):
+def evaluate(test_loader, model, device, savepath):
 
     # switch to evaluate mode
     model.eval()
@@ -240,6 +240,9 @@ def evaluate(test_loader, model, device, savepath, idx_2_class):
 
     # pdb.set_trace()
     top5 = np.concatenate(top5, 0)
-    top5 = [','.join([idx_2_class[pred] for pred in preds]) for preds in top5]
-    savepath = os.path.join(os.path.dirname(savepath), 'predictions.csv')
+    top5 = [','.join([test_loder.dataset.classes[pred] for pred in preds]) for preds in top5]
+    if savepath is not None:
+        savepath = os.path.join(os.path.dirname(savepath), 'predictions.csv')
+    else:
+        savepath = '/dev/stdout'
     np.savetxt(savepath, top5, fmt='%s')

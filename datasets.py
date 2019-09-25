@@ -5,7 +5,9 @@ import torch
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision import datasets, transforms
 
-
+available_extra = {
+    'grayscale': transforms.Grayscale(),
+}
 
 class Cifar10():
     normalize = transforms.Normalize(
@@ -14,7 +16,6 @@ class Cifar10():
     )
 
     default_transform = [transforms.ToTensor(), normalize]
-
     def __init__(self,
                  data_dir='./data',
                  batch_size=32,
@@ -33,9 +34,10 @@ class Cifar10():
 
         assert isinstance(extra_transforms,
                           list), 'extra_transforms should be a list'
-        # assert [isinstance(transform, transforms) for transform in extra_transforms], \
-        #     'elements of extra_transforms must be valid torchvision.transforms'
+        assert np.all([extra in available_extra.keys()
+                      for extra in extra_transforms]), 'extra_transforms should be a list'
 
+        extra_transforms = []
         default_transforms = transforms.Compose(Cifar10.default_transform)
         extra_transforms = transforms.Compose(extra_transforms +
                                               Cifar10.default_transform)

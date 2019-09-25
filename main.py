@@ -2,9 +2,9 @@ import argparse
 import os
 
 import torch
-from datasets import Cifar10
+import datasets
 from losses import cross_entropy
-from models import Net
+from models import SRCNN
 from process import evaluate, fit, validate
 from torch import optim
 
@@ -21,19 +21,22 @@ optims_dict = {
     }  # same as original paper
 }
 
+model_dir_prefix = './models'
 
 def execute(args):
 
     filepath = None
-    last_epoch = 0
+    last_epoch = -1
     history = None
 
     device = torch.device(
         "cuda:0" if args.cuda and torch.cuda.is_available() else "cpu")
 
-    model = Net()
-    model = model.to(device)
+    dataset = datasets.dataset[args.dataset](args.data_dir, args.batch_size, args.val_split,
+                                             args.seed, extra_transforms=args.transforms)
 
+    model = SRCNN(args.wavelet, args.level, 'grayscale' in args.transforms)
+    model = model.to(device)
     criterion = cross_entropy.to(device)
 
     optimizer = optims_dict[args.optim]['method'](
@@ -42,18 +45,17 @@ def execute(args):
         weight_decay=args.wd,
         **optims_dict[args.optim]['params'])
 
-    dataset = Cifar10(args.data_dir, args.batch_size, args.val_split,
-                      args.seed)
-    # scheduler = optim.lr_scheduler.StepLR(optimizer, args.lr_decay)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_step, gamma=args.lr_decay)
 
     if args.save:
-        filepath = os.path.join(args.model_dir, 'checkpoint.pth')
-        if not os.path.exists(args.model_dir):
-            os.makedirs(args.model_dir)
+        model_dir = os.path.join(model_dir_prefix, args.dataset, args.model)
+        filepath = os.path.join(model_dir, 'checkpoint.pth')
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
 
     if args.resume:
         # only resumes from the last not from the best
-        filepath = os.path.join(args.model_dir, 'checkpoint{}.pth')
+        filepath = os.path.join(model_dir_prefix, args.dataset, args.model, 'checkpoint{}.pth')
         checkpoint = torch.load(filepath.format('-last'), map_location=device)
 
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -77,6 +79,7 @@ def execute(args):
             args.epochs,
             device,
             optimizer,
+            scheduler,
             savepath=filepath,
             start_epoch=last_epoch + 1,
             history=history)
@@ -97,18 +100,18 @@ def execute(args):
         evaluate(dataset.test_loader,
                  model,
                  device,
-                 savepath=filepath,
-                 idx_2_class=dataset.class_names)
+                 savepath=filepath)
         print('Finished Testing')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='PyTorch training w/ subband separation')
-    parser.add_argument('--model-dir',
-                        default='./models/',
-                        help='path to save/load model')
+    parser.add_argument('--model',
+                        default='trial',
+                        help='model name (creates dir to save/load the model)')
     parser.add_argument('--data-dir', default='./data', help='dir to dataset')
+    parser.add_argument('--dataset', type=str, choices=datasets.dataset.keys(), help='dataset name')
 
     parser.add_argument('--optim',
                         default='adam',
@@ -116,14 +119,18 @@ if __name__ == '__main__':
                         choices=optims_dict.keys(),
                         help='optimizer')
     parser.add_argument('--wd',
-                        default=5e-4,
+                        default=1e-3,
                         type=float,
                         help='weight decay for optimizer')
     parser.add_argument('--lr', default=1e-2, type=float, help='learning rate')
     parser.add_argument('--lr-decay',
-                        default=15,
+                        default=0.2,
+                        type=float,
+                        help='learning rate decay factor: new = old * factor')
+    parser.add_argument('--lr-step',
+                        default=10,
                         type=int,
-                        help='learning rate decay interval')
+                        help='interval in nb of epochs to decay the learning rate')
     parser.add_argument('--epochs',
                         default=10,
                         type=int,
@@ -136,7 +143,19 @@ if __name__ == '__main__':
                         default=0.1,
                         type=float,
                         help='val:train set size ratio')
-
+    parser.add_argument('--wavelet',
+                        default='db2',
+                        type=str,
+                        help='wavelet')
+    parser.add_argument('--level',
+                        default=0,
+                        type=int,
+                        help='nb of levels for wavelet analysis')
+    parser.add_argument('--transforms',
+                        default=[],
+                        nargs='*',
+                        type=str,
+                        help='transformations on the input img')
     parser.add_argument('--seed',
                         default=None,
                         type=int,
@@ -165,4 +184,5 @@ if __name__ == '__main__':
                         help='compute predictions on test set')
 
     args = parser.parse_args()
+    print(args)
     execute(args)

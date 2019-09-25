@@ -10,7 +10,7 @@ from torchvision import datasets, transforms
 class Cifar10():
     normalize = transforms.Normalize(
         mean=[0.4914, 0.4822, 0.4465],
-        std=[0.2023, 0.1994, 0.2010],
+        std=[0.2470, 0.2435, 0.2616],
     )
 
     default_transform = [transforms.ToTensor(), normalize]

@@ -44,6 +44,13 @@ class SRCNN(nn.Module):
         x = self.fc3(x)
         return x
 
+    @classmethod
+    def from_name(cls, num_classes, wavelet, levels=0, grayscale=False):
+        wavelet=kwargs.get('wavelet', None)
+        levels=kwargs.get('level', 0)
+        grayscale=kwargs.get('grayscale', None)
+
+        return cls(num_classes, wavelet, levels, grayscale)
 
 # Original:
 # init biases to 1

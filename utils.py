@@ -36,8 +36,9 @@ def accuracy(output, target, topk=(1,)):
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
+
 def construct_wt_filters(wavelet):
-    assert wavelet in pywt.wavelist(), 'Invalid wavelet choice'
+    assert wavelet in pywt.wavelist(), 'Invalid wavelet choice {}'.format(wavelet)
 
     # A familia de wavelet
     w=pywt.Wavelet(wavelet)

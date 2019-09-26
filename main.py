@@ -1,10 +1,10 @@
 import argparse
 import os
 
+# from models import SRCNN
+import archs
 import datasets
 import torch
-# from models import SRCNN
-from archs import SRCNN
 from losses import cross_entropy
 from process import evaluate, fit, validate
 from torch import optim
@@ -24,6 +24,12 @@ optims_dict = {
 
 model_dir_prefix = './models'
 
+model_name_mapper = {
+    'efficientnet': archs.EfficientNet,
+    'srcnn': archs.SRCNN,
+    'cnn': archs.CNN,
+}
+
 def execute(args):
 
     filepath = None
@@ -34,10 +40,18 @@ def execute(args):
         "cuda:0" if args.cuda and torch.cuda.is_available() else "cpu")
 
     dataset = datasets.dataset[args.dataset](args.data_dir, args.batch_size, args.val_split,
-                                             args.seed, extra_transforms=args.transforms)
+                                             args.seed, args.workers, args.grayscale,
+                                             args.augmentation)
 
     nb_classes = len(dataset.train_loader.dataset.classes)
-    model = SRCNN(nb_classes, args.wavelet, args.level, 'grayscale' in args.transforms)
+    # model = SRCNN(nb_classes, args.wavelet, args.level, 'grayscale' in args.transforms)
+
+
+    model = model_name_mapper[args.arch].from_name(num_classes=nb_classes,
+                                                   wavelet=args.wavelet,
+                                                   levels=args.level,
+                                                   grayscale=args.grayscale)
+    # print(model)
     model = model.to(device)
     criterion = cross_entropy.to(device)
 
@@ -49,8 +63,8 @@ def execute(args):
 
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_step, gamma=args.lr_decay)
 
+    model_dir = os.path.join(model_dir_prefix, args.dataset, args.arch, args.model)
     if args.save:
-        model_dir = os.path.join(model_dir_prefix, args.dataset, args.model)
         filepath = os.path.join(model_dir, 'checkpoint.pth')
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
@@ -58,7 +72,7 @@ def execute(args):
 
     if args.resume:
         # only resumes from the last not from the best
-        filepath = os.path.join(model_dir_prefix, args.dataset, args.model, 'checkpoint{}.pth')
+        filepath = os.path.join(model_dir, 'checkpoint{}.pth')
         checkpoint = torch.load(filepath.format('-last'), map_location=device)
 
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -110,6 +124,9 @@ def execute(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='PyTorch training w/ subband separation')
+    parser.add_argument('--arch',
+                        help='architecture name',)
+                        # choices=['srcnn', 'cnn', 'efficientnet-b[0-7]'])
     parser.add_argument('--model',
                         default='trial',
                         help='model name (creates dir to save/load the model)')
@@ -139,7 +156,7 @@ if __name__ == '__main__':
                         type=int,
                         help='nb of epochs to train')
     parser.add_argument('--batch-size',
-                        default=32,
+                        default=128,
                         type=int,
                         help='size of mini-batch')
     parser.add_argument('--val-split',
@@ -154,11 +171,12 @@ if __name__ == '__main__':
                         default=0,
                         type=int,
                         help='nb of levels for wavelet analysis')
-    parser.add_argument('--transforms',
-                        default=[],
-                        nargs='*',
-                        type=str,
-                        help='transformations on the input img')
+    parser.add_argument('--grayscale',
+                        action='store_true',
+                        help='transform image to grayscale before processing')
+    parser.add_argument('--augmentation',
+                        action='store_true',
+                        help='do random crop and horizontal flip as data augmentation')
     parser.add_argument('--seed',
                         default=None,
                         type=int,
@@ -172,6 +190,10 @@ if __name__ == '__main__':
                         '-s',
                         action='store_true',
                         help='save checkpoint')
+    parser.add_argument('--workers',
+                        default=4,
+                        type=int,
+                        help='nb of processes to fetch data')
     parser.add_argument('--cuda',
                         action='store_true',
                         help='use gpu acceleration')

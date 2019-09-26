@@ -1,12 +1,10 @@
 
 import numpy as np
-import torch
-from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision import datasets, transforms
 
-available_extra = {
-    'grayscale': transforms.Grayscale(),
-}
+import torch
+from torch.utils.data.sampler import SubsetRandomSampler
+
 
 class Cifar10():
     normalize = transforms.Normalize(
@@ -21,7 +19,8 @@ class Cifar10():
                  split=0.1,
                  rnd_seed=0,
                  num_workers=4,
-                 extra_transforms=[]):
+                 grayscale=False,
+                 augmentation=False):
         """Create dataloaders for training and test sets of CIFAR-10 dataset. Download it if
         necessary.
 
@@ -31,15 +30,16 @@ class Cifar10():
             extra_transforms (list, optional): Transformations to apply to the imgs. Defaults to [].
         """
 
-        assert isinstance(extra_transforms,
-                          list), 'extra_transforms should be a list'
-        assert np.all([extra in available_extra.keys()
-                      for extra in extra_transforms]), 'extra_transforms should be a list'
+        extra = []
+        default_transforms = transforms.Compose(self.default_transform)
 
-        extra_transforms = []
-        default_transforms = transforms.Compose(Cifar10.default_transform)
-        extra_transforms = transforms.Compose(extra_transforms +
-                                              Cifar10.default_transform)
+        if grayscale:
+            extra += [transforms.Grayscale(num_output_channels=3)]
+        if augmentation:
+            extra += [transforms.RandomCrop(32, padding=4),
+                                 transforms.RandomHorizontalFlip()]
+
+        extra_transforms = transforms.Compose(extra + self.default_transform)
 
         train_set = datasets.CIFAR10(root=data_dir,
                                      train=True,
@@ -90,15 +90,17 @@ class Cifar100():
             extra_transforms (list, optional): Transformations to apply to the imgs. Defaults to [].
         """
 
-        assert isinstance(extra_transforms,
-                          list), 'extra_transforms should be a list'
-        assert np.all([extra in available_extra.keys()
-                      for extra in extra_transforms]), 'extra_transforms should be a list'
+        extra = []
+        default_transforms = transforms.Compose(self.default_transform)
 
-        extra_transforms = []
-        default_transforms = transforms.Compose(Cifar100.default_transform)
-        extra_transforms = transforms.Compose(extra_transforms +
-                                              Cifar100.default_transform)
+        if grayscale:
+            extra += [transforms.Grayscale(num_output_channels=3)]
+        if augmentation:
+            extra += [transforms.RandomCrop(32, padding=4),
+                                 transforms.RandomHorizontalFlip()]
+
+        extra_transforms = transforms.Compose(extra +
+                                              self.default_transform)
 
         train_set = datasets.CIFAR100(root=data_dir,
                                      train=True,
